@@ -41,9 +41,26 @@ sns.stripplot(
 # center of the strips by adjusting the width allotted to each
 # category (.8 by default) by the number of hue levels
 
-plt.xlabel("Banking system concentraion \n (Share of biggest 5 banks' assets in the system)")
-plt.ylabel("Riskiness (squared NPL ratio)")
+plt.xlabel("Banking system concentraion \n (measured as share of biggest 5 banks' assets in the system)", fontweight='bold')
+plt.ylabel("Riskiness \n (measured squared NPL ratio)", fontweight='bold')
 
+ax.text(
+    0.01, 0.5, 
+    "Data from Worldbank and IMF \nChart prepared by Arthur Grigoryan, CFA",
+    fontsize=8,
+    #fontweight='bold',
+    fontstyle='italic',
+    color='grey',
+    rotation=90,
+    fontfamily='sans-serif',
+    transform=ax.transAxes,        # use axes-relative coordinates
+    ha='left',                     # horizontally align left
+    va='bottom',                   # vertically align bottom
+)
+
+ax.set_title("The banking system is safest when the \n top 5 banks hold about 60-70% of the market.", fontsize=16, fontweight='bold', color='grey')
+#ax.get_yaxis().set_visible(False)
+plt.yticks([]) 
 
 plt.ylim(0, 0.025)
 
