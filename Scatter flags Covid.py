@@ -1,99 +1,106 @@
-import pandas as pd
+import os
 import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+import pandas as pd
 
-import cairosvg    # for SVG -> PNG conversion
-import numpy as np
-import io
-from PIL import Image
+# ------------------------------------------------------------------
+# SAMPLE DATA
+# ------------------------------------------------------------------
+# Let's say we have 4 countries with some (x,y) coordinates.
+path="C:\\Users\\Arthur\\Documents\\Linkedin data\\"
+data=pd.read_excel(path+"iMaPP_database-2024-12-2.xlsx", 
+    sheet_name="MaPP", usecols="AX:BA", skiprows=32, nrows=103, header=0)
 
-# -------------------------------------------------------------------
-# 1) SAMPLE DATA
-# -------------------------------------------------------------------
-data = {
-    'country': ['US', 'IT', 'ES', 'JP'],
-    'date': ['2020-01-30', '2020-02-23', '2020-03-09', '2020-01-15']
-}
 df = pd.DataFrame(data)
-# Convert 'date' strings to actual datetime objects
-df['date'] = pd.to_datetime(df['date'])
-# Sort by date (optional)
-df = df.sort_values('date').reset_index(drop=True)
 
-# For each row, assign a Y-value so that each flag appears at a different height
-df['y'] = range(1, len(df) + 1)
+# Convert 'Date' to a proper datetime type and sort by date
+#df['Date'] = pd.to_datetime(df['Date'])
+#df = df.sort_values('Date').reset_index(drop=True)
 
-# -------------------------------------------------------------------
-# 2) FUNCTION TO LOAD & CONVERT SVG TO A NUMPY ARRAY
-# -------------------------------------------------------------------
-def load_svg_as_array(iso_code, folder='flags'):
-    """
-    Given a 2-letter ISO country code (e.g. 'US'),
-    reads the corresponding .svg file from 'folder/xx.svg',
-    converts it to PNG bytes via cairosvg,
-    and returns a NumPy array that can be used with Matplotlib.
-    """
-    svg_path = f"{folder}/{iso_code.lower()}.svg"
-    # Read the SVG file
-    with open(svg_path, 'rb') as f:
-        svg_data = f.read()
-    # Convert the SVG bytes to PNG bytes
-    png_data = cairosvg.svg2png(bytestring=svg_data)
-    # Convert PNG bytes to a Pillow Image
-    pil_img = Image.open(io.BytesIO(png_data))
-    # Convert Pillow Image to NumPy array
-    img_array = np.array(pil_img)
-    return img_array
+#df['Y'] = range(1, len(df) + 1)
 
-# -------------------------------------------------------------------
-# 3) PLOT WITH FLAGS AS MARKERS
-# -------------------------------------------------------------------
-fig, ax = plt.subplots(figsize=(8, 5))
 
-for i, row in df.iterrows():
-    # Convert the datetime to a Matplotlib numeric date
-    x_value = mdates.date2num(row['date'])
-    y_value = row['y']
+countries = df['iso2'].tolist()
+x_coords   = df['X'].tolist()
+y_coords   = df['Y'].tolist()
+
+# Path to the folder that has our .png flags:
+flags_folder = "C:/Users/Arthur/Documents/Linkedin data/Round flags/circle-flags/flags/PNG/"
+
+# ------------------------------------------------------------------
+# CREATE FIGURE & AXIS
+# ------------------------------------------------------------------
+fig, ax = plt.subplots(figsize=(6, 4))
+
+# ------------------------------------------------------------------
+# PLOT EACH POINT AS A FLAG
+# ------------------------------------------------------------------
+for country, x, y in zip(countries, x_coords, y_coords):
+    # Build the file path to the flag
+    flag_path = os.path.join(flags_folder, country + ".png")
     
-    # Load that country's SVG, convert to array
-    flag_array = load_svg_as_array(row['country'])
+    # Read the PNG image as a numpy array
+    img_array = plt.imread(flag_path)
     
-    # Embed the image as an offset marker
-    offset_img = OffsetImage(flag_array, zoom=0.3)  # adjust zoom as needed
+    # Create an 'OffsetImage' to be placed at (x, y)
+    imagebox = OffsetImage(img_array, zoom=0.035)  # 'zoom' adjusts the flag size
+    
+    # Create an AnnotationBbox to tie the image to the (x, y) data position
     ab = AnnotationBbox(
-        offset_img,
-        (x_value, y_value),
-        frameon=False  # no box around the image
-    )
+        imagebox,
+        (x, y),
+        frameon=True,
+        bboxprops=dict(
+            boxstyle="circle,pad=0.01",  # or "circle,pad=0.5" for a circle
+            edgecolor="black",
+            linewidth=1,
+            facecolor="none"
+        )
+    )    
     ax.add_artist(ab)
 
-# -------------------------------------------------------------------
-# 4) FORMAT THE AXES
-# -------------------------------------------------------------------
-# Use automatic date tick locator/formatter
-ax.xaxis.set_major_locator(mdates.AutoDateLocator())
-ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
-fig.autofmt_xdate()  # rotate and align date labels
+# ------------------------------------------------------------------
+# OPTIONAL: PLOT A NORMAL SCATTER IN THE BACKGROUND (just for reference)
+# ------------------------------------------------------------------
+# If you want to see where your points are in the coordinate system
+# (and confirm they're in the right place), you can do:
+ax.scatter(x_coords, y_coords, marker='o', color='red', alpha=0.2)
 
-# Set y-limits so flags are comfortably in the plot
-ax.set_ylim(0, len(df) + 1)
+# ------------------------------------------------------------------
+# ADJUST THE AXIS LIMITS & LABELS
+# ------------------------------------------------------------------
+# Make sure all flags are comfortably in view
+#ax.set_xlim(0, 5)
+#ax.set_ylim(0, 6)
 
-# Optional labels
-plt.title("Country COVID Response Dates (SVG Flags)")
-plt.xlabel("Date")
-plt.ylabel("Position")
+ax.set_xticks([])            # removes the tick marks
+ax.set_xticklabels([])  
+
+ax.set_yticks([])            # removes the tick marks
+ax.set_yticklabels([])  
+
+
+ax.text(
+    0.01, 0.4, 
+    "Data from IMF's iMaPP database \nChart prepared by Arthur Grigoryan, CFA",
+    fontsize=8,
+    #fontweight='bold',
+    fontstyle='italic',
+    color='grey',
+    rotation=90,
+    fontfamily='sans-serif',
+    transform=ax.transAxes,        # use axes-relative coordinates
+    ha='left',                     # horizontally align left
+    va='bottom',                   # vertically align bottom
+)
+
+ax.set_title("Most of MacroPru loosening cases happened in March 2020 \n Although some countries reacted faster than the most", fontsize=15, fontweight='bold', color='black')
+
+#plt.title("Scatter Plot with Country Flags")
+#plt.xlabel("X-Axis")
+#plt.ylabel("Y-Axis")
 
 plt.show()
 
 
 
-
-
-
-
-
-
-flag_img = plt.imread("C:\\path\\to\\my\\flag.png")
-path="C:\\Users\\Arthur\\Documents\\Linkedin data\\Round flags\\circle-flags\\flags\\"
-plt.imread(path+str(df.iloc[0,0])+".svg")
