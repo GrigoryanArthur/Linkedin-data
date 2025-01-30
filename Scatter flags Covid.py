@@ -25,7 +25,7 @@ x_coords   = df['X'].tolist()
 y_coords   = df['Y'].tolist()
 
 # Path to the folder that has our .png flags:
-flags_folder = "C:/Users/Arthur/Documents/Linkedin data/Round flags/circle-flags/flags/PNG/"
+flags_folder = "C:/Users/Arthur/Documents/Linkedin data/Round flags/PNG/"
 
 # ------------------------------------------------------------------
 # CREATE FIGURE & AXIS
